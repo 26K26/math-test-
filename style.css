@@ -1,0 +1,38 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin: 20px;
+}
+
+#question-text {
+  font-size: 32px;
+  margin-bottom: 20px;
+}
+
+#answer-input {
+  font-size: 28px;
+  width: 250px;
+  height: 40px;
+  margin: 10px;
+  text-align: center;
+}
+
+#keypad button {
+  margin: 3px;
+  padding: 12px 16px;
+  font-size: 18px;
+}
+
+#next-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 18px;
+}
+
+#timer {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 18px;
+  font-weight: bold;
+}

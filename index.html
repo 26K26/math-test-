@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>２乗の数（２０まで） 小テスト</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <div id="start-screen">
+    <h2>【注意事項】</h2>
+    <p>・このテスト中に他の画面を開くと、自動的に送信されます。</p>
+    <p>・問題は1問ずつ表示され、仮想テンキーで解答します。</p>
+    <p>・Enterキーまたは「次へ」ボタンで次の問題へ進みます。</p>
+    <form id="user-form">
+      <label>名前: <input type="text" id="name" required></label><br>
+      <label>学年: <input type="text" id="grade" required></label><br>
+      <label>クラス: <input type="text" id="class" required></label><br>
+      <button type="submit">開始</button>
+    </form>
+  </div>
+
+  <div id="quiz-screen" style="display: none;">
+    <div id="timer"></div>
+    <div id="question-container">
+      <div id="question-text"></div>
+      <input id="answer-input" type="text" readonly>
+    </div>
+    <div id="keypad">
+      <button onclick="insertSymbol('7')">7</button>
+      <button onclick="insertSymbol('8')">8</button>
+      <button onclick="insertSymbol('9')">9</button>
+      <button onclick="insertSymbol('+')">+</button><br>
+      <button onclick="insertSymbol('4')">4</button>
+      <button onclick="insertSymbol('5')">5</button>
+      <button onclick="insertSymbol('6')">6</button>
+      <button onclick="insertSymbol('-')">−</button><br>
+      <button onclick="insertSymbol('1')">1</button>
+      <button onclick="insertSymbol('2')">2</button>
+      <button onclick="insertSymbol('3')">3</button>
+      <button onclick="insertSymbol('×')">×</button><br>
+      <button onclick="insertSymbol('0')">0</button>
+      <button onclick="insertSymbol('÷')">÷</button>
+      <button onclick="insertSymbol('^2')">^2</button>
+      <button onclick="insertSymbol('√')">√</button><br>
+      <button onclick="insertSymbol('(')">(</button>
+      <button onclick="insertSymbol(')')">)</button>
+      <button onclick="insertSymbol('x')">x</button>
+      <button onclick="insertSymbol('y')">y</button><br>
+      <button onclick="backspace()">←</button>
+      <button onclick="clearInput()">クリア</button>
+    </div>
+    <button id="next-button">次へ</button>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
