@@ -102,3 +102,25 @@ form input, form select {
 #quiz-screen {
   position: relative;
 }
+
+#result-screen {
+  max-width: 600px;
+  margin: 30px auto;
+  padding: 30px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  font-size: 18px;
+}
+#result-screen table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+#result-screen th, #result-screen td {
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+#result-screen th {
+  background-color: #f0f0f0;
+}
