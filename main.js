@@ -104,16 +104,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   startBtn.addEventListener("click", () => {
-    if (!nameInput.value) {
-      alert("名前を入力してください");
-      return;
-    }
-    generateQuestions();
-    renderQuestion();
-    startSection.classList.add("hidden");
-    testSection.classList.remove("hidden");
-    startTimer();
-  });
+  if (!nameInput.value.trim()) {
+    alert("名前を入力してください");
+    return;
+  }
+  if (!gradeSelect.value.trim()) {
+    alert("学年を入力してください");
+    return;
+  }
+  if (!classSelect.value) {
+    alert("クラスを選択してください");
+    return;
+  }
+  if (!numberSelect.value) {
+    alert("出席番号を選択してください");
+    return;
+  }
+
+  generateQuestions();
+  renderQuestion();
+  startSection.classList.add("hidden");
+  testSection.classList.remove("hidden");
+  startTimer();
+});
+
 
   prevBtn.addEventListener("click", () => {
     saveCurrentAnswer();
