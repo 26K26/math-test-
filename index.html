@@ -1,172 +1,47 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>数学小テスト（正の平方根）</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
-      margin: 20px;
-      text-align: center;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    section {
-      max-width: 600px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    }
-
-    h2 {
-      font-size: 24px;
-      margin-bottom: 10px;
-    }
-
-    label {
-      display: block;
-      margin: 10px 0 5px;
-      text-align: left;
-    }
-
-    input, select {
-      font-size: 16px;
-      padding: 5px;
-      width: 100%;
-      max-width: 300px;
-    }
-
-    #questionText {
-      font-size: 32px;
-      margin: 20px 0;
-    }
-
-    #answerInput {
-      font-size: 28px;
-      width: 260px;
-      height: 45px;
-      margin: 15px auto;
-      text-align: center;
-      border: 2px solid #ccc;
-      border-radius: 5px;
-    }
-
-    .keypad {
-      margin: 10px auto;
-      max-width: 280px;
-    }
-
-    .keypad button {
-      width: 60px;
-      height: 45px;
-      margin: 4px;
-      font-size: 18px;
-    }
-
-    .button-group {
-      margin-top: 20px;
-    }
-
-    .button-group button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin: 5px;
-    }
-
-    #timer {
-      position: absolute;
-      top: 10px;
-      right: 20px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #d32f2f;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>平方根 小テスト</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- 開始画面 -->
-<section id="startSection">
-  <h2>数学小テスト</h2>
-  <label for="name">名前</label>
-  <input type="text" id="name" required>
+<div id="timer">残り: 5:00</div>
 
-  <label for="grade">学年</label>
-  <input type="text" id="grade" required>
+<div id="startScreen" class="active">
+  <h1>平方根 小テスト</h1>
+  <p>名前：<input type="text" id="name"></p>
+  <p>学年：<input type="text" id="grade"></p>
+  <p>クラス：
+    <select id="class">
+      <option value="">選択</option>
+      <option>1組</option><option>2組</option><option>3組</option>
+    </select>
+  </p>
+  <p>出席番号：
+    <select id="number"></select>
+  </p>
+  <button onclick="startQuiz()">開始</button>
+</div>
 
-  <label for="class">クラス</label>
-  <select id="class" required>
-    <option value="">選択してください</option>
-    <option value="A">A</option>
-    <option value="B">B</option>
-  </select>
-
-  <label for="number">出席番号</label>
-  <select id="number" required></select>
-
-  <div class="button-group">
-    <button id="startBtn">開始</button>
+<div id="quizScreen">
+  <div class="question" id="questionText"></div>
+  <div class="input-area" id="answerInput"></div>
+  <div class="keypad" id="keypad"></div>
+  <div class="nav-buttons">
+    <button onclick="prevQuestion()">前へ</button>
+    <button onclick="nextQuestion()">次へ</button>
+    <button onclick="submitAnswers()">送信</button>
   </div>
-</section>
+</div>
 
-<!-- テスト画面 -->
-<section id="testSection" class="hidden">
-  <div id="timer"></div>
-  <div id="currentQuestionNumber">1/20</div>
-  <div id="questionText">√49 =</div>
-  <input type="text" id="answerInput" readonly>
-
-  <div class="keypad">
-    <button class="key" data-value="1">1</button>
-    <button class="key" data-value="2">2</button>
-    <button class="key" data-value="3">3</button>
-    <button class="key" data-value="4">4</button>
-    <button class="key" data-value="5">5</button>
-    <button class="key" data-value="6">6</button>
-    <button class="key" data-value="7">7</button>
-    <button class="key" data-value="8">8</button>
-    <button class="key" data-value="9">9</button>
-    <button class="key" data-value="0">0</button>
-    <button id="clearBtn">C</button>
-    <button id="backspaceBtn">←</button>
-  </div>
-
-  <div class="button-group">
-    <button id="prevBtn">前へ</button>
-    <button id="nextBtn">次へ</button>
-    <button id="submitBtn">送信</button>
-  </div>
-</section>
-
-<!-- 結果画面 -->
-<section id="resultSection" class="hidden">
-  <h2>結果</h2>
-  <p id="finalScore"></p>
-  <ul id="errorList"></ul>
-</section>
-
-<script>
-  // 出席番号（1〜25）を動的に生成
-  window.addEventListener('DOMContentLoaded', () => {
-    const numberSelect = document.getElementById('number');
-    for (let i = 1; i <= 25; i++) {
-      const opt = document.createElement('option');
-      opt.value = i;
-      opt.textContent = i;
-      numberSelect.appendChild(opt);
-    }
-  });
-</script>
+<div id="resultScreen">
+  <h2>テスト結果</h2>
+  <p id="scoreText"></p>
+  <div id="wrongAnswers"></div>
+</div>
 
 <script src="main.js"></script>
 </body>
