@@ -1,179 +1,162 @@
-let quizData = [];
-for (let i = 1; i <= 20; i++) {
-  const squared = i * i;
-  quizData.push({
-    question: `\\(\\sqrt{${squared}}\\)（ただし、数字は整数に限る）`,
-    answer: i.toString()
-  });
-}
-// ランダムシャッフル
-quizData = quizData.sort(() => Math.random() - 0.5);
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzaEbohb33NPS8iYg8YmCB46xcd99OwvjuV28EUXt9elnQ7DTzaFJkcmF8r0ez_BIXEZQ/exec";
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzaEbohb33NPS8iYg8YmCB46xcd99OwvjuV28EUXt9elnQ7DTzaFJkcmF8r0ez_BIXEZQ/exec';
+// 1〜20の平方数（1²～20²）
+const squares = Array.from({ length: 20 }, (_, i) => (i + 1) ** 2);
 
+// 出題順をランダムに
+const questions = shuffleArray(squares);
+
+let userInfo = {};
 let currentQuestionIndex = 0;
-let answers = Array(quizData.length).fill("");
+let answers = [];
+let startTime;
 let timerInterval;
-let remainingTime = 60 * 3; // 3分
 
-// 出席番号セレクト生成（1〜25）
-window.addEventListener('DOMContentLoaded', () => {
-  const numberSelect = document.getElementById('number');
-  for (let i = 1; i <= 25; i++) {
-    const opt = document.createElement('option');
-    opt.value = opt.textContent = i;
-    numberSelect.appendChild(opt);
-  }
-});
-
-document.getElementById('user-form').addEventListener('submit', function (e) {
+// --- イベントリスナーなど省略せずにセットする ---
+document.getElementById("user-form").addEventListener("submit", function (e) {
   e.preventDefault();
-
-  const name = document.getElementById('name').value.trim();
-  const grade = document.getElementById('grade').value.trim();
-  const className = document.getElementById('class').value;
-  const number = document.getElementById('number').value;
+  const name = document.getElementById("name").value.trim();
+  const grade = document.getElementById("grade").value.trim();
+  const className = document.getElementById("class").value;
+  const number = document.getElementById("number").value;
 
   if (!name || !grade || !className || !number) {
     alert("すべての項目を入力してください。");
     return;
   }
 
-  document.getElementById('start-screen').style.display = 'none';
-  document.getElementById('quiz-screen').style.display = 'block';
+  userInfo = { name, grade, class: className, number };
+  document.getElementById("start-screen").style.display = "none";
+  document.getElementById("quiz-screen").style.display = "block";
   document.addEventListener("visibilitychange", handleVisibilityChange);
   startTimer();
   showQuestion();
 });
 
+// --- 出題を表示 ---
 function showQuestion() {
-  if (currentQuestionIndex >= quizData.length) {
-    confirmSubmit();
+  const questionNumber = currentQuestionIndex + 1;
+  const squareValue = questions[currentQuestionIndex];
+  document.getElementById("question-number").textContent = `問${questionNumber}`;
+  document.getElementById("question").innerHTML = `\\( \\sqrt{${squareValue}} \\) の値は？`;
+  document.getElementById("answer-input").value = "";
+  MathJax.typeset(); // MathJaxで再描画
+}
+
+// --- テンキー入力処理 ---
+document.querySelectorAll(".key").forEach(button => {
+  button.addEventListener("click", function () {
+    const input = document.getElementById("answer-input");
+    const value = this.textContent;
+    if (value === "クリア") {
+      input.value = "";
+    } else if (value === "←") {
+      input.value = input.value.slice(0, -1);
+    } else {
+      input.value += value;
+    }
+  });
+});
+
+// --- 「次へ」ボタン ---
+document.getElementById("next-btn").addEventListener("click", function () {
+  const input = document.getElementById("answer-input").value.trim();
+  if (!input) {
+    alert("答えを入力してください。");
     return;
   }
 
-  const q = quizData[currentQuestionIndex];
-  document.getElementById('question-text').innerHTML = `${q.question} =`;
-  document.getElementById('answer-input').value = answers[currentQuestionIndex] || '';
-  document.getElementById('back-button').style.display = currentQuestionIndex > 0 ? 'inline-block' : 'none';
+  answers.push(input);
+  currentQuestionIndex++;
 
-  if (window.MathJax) MathJax.typesetPromise();
-}
-
-document.getElementById('next-button').addEventListener('click', nextQuestion);
-document.getElementById('back-button').addEventListener('click', previousQuestion);
-document.addEventListener('keydown', function (e) {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    nextQuestion();
+  if (currentQuestionIndex < questions.length) {
+    showQuestion();
+  } else {
+    stopTimer();
+    submitAnswers();
   }
 });
 
-function nextQuestion() {
-  const input = document.getElementById('answer-input').value.trim();
-  if (input === "") {
-    alert("答えを入力してください");
-    return;
+// --- 成績送信処理 ---
+async function submitAnswers() {
+  const endTime = new Date();
+  const duration = Math.floor((endTime - startTime) / 1000); // 秒数
+  const score = answers.reduce((acc, ans, i) => acc + (parseInt(ans) === Math.sqrt(questions[i]) ? 1 : 0), 0);
+  const incorrect = questions.map((q, i) => {
+    const correct = Math.sqrt(q);
+    return parseInt(answers[i]) === correct ? null : `問${i + 1}: √${q} → ${answers[i]}（正解：${correct}）`;
+  }).filter(Boolean).join("\n");
+
+  const data = {
+    timestamp: new Date().toLocaleString("ja-JP"),
+    name: userInfo.name,
+    grade: userInfo.grade,
+    class: userInfo.class,
+    number: userInfo.number,
+    score,
+    total: questions.length,
+    duration,
+    answers: answers.join(","),
+    incorrect
+  };
+
+  document.getElementById("next-btn").disabled = true;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      });
+      break;
+    } catch (err) {
+      if (attempt === 3) alert("送信に失敗しました。通信環境をご確認ください。");
+    }
   }
-  answers[currentQuestionIndex] = input;
-  currentQuestionIndex++;
-  showQuestion();
+
+  showResult(score, questions.length, incorrect);
 }
 
-function previousQuestion() {
-  const input = document.getElementById('answer-input').value.trim();
-  answers[currentQuestionIndex] = input;
-  currentQuestionIndex--;
-  showQuestion();
+// --- 結果表示 ---
+function showResult(score, total, incorrect) {
+  document.getElementById("quiz-screen").style.display = "none";
+  document.getElementById("result-screen").style.display = "block";
+  document.getElementById("score").textContent = `正解数：${score} / ${total}`;
+  document.getElementById("details").textContent = incorrect || "すべて正解です！";
 }
 
-function insertSymbol(sym) {
-  const input = document.getElementById('answer-input');
-  input.value += sym;
-}
-
-function backspace() {
-  const input = document.getElementById('answer-input');
-  input.value = input.value.slice(0, -1);
-}
-
-function clearInput() {
-  document.getElementById('answer-input').value = '';
-}
-
-function handleVisibilityChange() {
-  if (document.visibilityState === 'hidden') {
-    confirmSubmit();
-  }
-}
-
+// --- タイマー機能 ---
 function startTimer() {
-  updateTimerDisplay();
+  const timer = document.getElementById("timer");
+  let timeLeft = 300;
+  startTime = new Date();
+
   timerInterval = setInterval(() => {
-    remainingTime--;
-    updateTimerDisplay();
-    if (remainingTime <= 0) {
+    timeLeft--;
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    timer.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    if (timeLeft <= 0) {
       clearInterval(timerInterval);
-      confirmSubmit();
+      alert("時間切れです。自動的に送信します。");
+      submitAnswers();
     }
   }, 1000);
 }
 
-function updateTimerDisplay() {
-  const min = Math.floor(remainingTime / 60);
-  const sec = remainingTime % 60;
-  document.getElementById('timer').textContent = `残り時間: ${min}:${sec.toString().padStart(2, '0')}`;
+function stopTimer() {
+  clearInterval(timerInterval);
 }
 
-function confirmSubmit() {
-  const proceed = confirm("解答を送信しますか？");
-  if (proceed) {
+function handleVisibilityChange() {
+  if (document.hidden) {
+    alert("画面外操作が検出されました。送信します。");
     submitAnswers();
   }
 }
 
-async function submitAnswers() {
-  clearInterval(timerInterval);
-  document.getElementById('next-button').disabled = true;
-  document.getElementById('back-button').disabled = true;
-
-  const name = encodeURIComponent(document.getElementById('name').value);
-  const grade = encodeURIComponent(document.getElementById('grade').value);
-  const className = encodeURIComponent(document.getElementById('class').value);
-  const number = encodeURIComponent(document.getElementById('number').value);
-  const answersStr = encodeURIComponent(answers.join(','));
-
-  const score = quizData.reduce((acc, q, i) =>
-    acc + (answers[i] === q.answer ? 1 : 0), 0);
-
-  const incorrect = quizData
-    .map((q, i) =>
-      (answers[i] !== q.answer
-        ? `${q.question}=${answers[i] || "未入力"}（正:${q.answer}）`
-        : null))
-    .filter(Boolean)
-    .join('; ');
-  const reason = encodeURIComponent(incorrect);
-
-  const url = `${GAS_URL}?name=${name}&grade=${grade}&className=${className}&number=${number}&answers=${answersStr}&score=${score}&reason=${reason}`;
-
-  let success = false;
-  for (let i = 0; i < 3; i++) {
-    try {
-      await fetch(url, { method: 'GET', mode: 'no-cors' });
-      success = true;
-      break;
-    } catch (err) {
-      console.warn(`送信リトライ ${i + 1} 回目失敗`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  }
-
-  if (!success) {
-    alert("送信に失敗しました。通信環境を確認してください。");
-    return;
-  }
-
-  alert(`${quizData.length}問中${score}問正解でした。\n\n【間違い】\n${incorrect || "なし"}`);
-  location.reload();
+// --- 配列シャッフル関数 ---
+function shuffleArray(arr) {
+  return [...arr].sort(() => Math.random() - 0.5);
 }
