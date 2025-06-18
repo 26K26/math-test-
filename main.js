@@ -159,3 +159,4 @@ window.addEventListener("beforeunload", function (e) {
 });
 
 window.onload = populateSelectOptions;
+window.startQuiz = startQuiz;
