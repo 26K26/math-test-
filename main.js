@@ -135,23 +135,23 @@ function submitAnswers(auto = false) {
   scoreText.textContent = `正解数: ${correct} / ${shuffled.length}`;
   wrongAnswers.innerHTML = wrongList || "<p>全問正解です！</p>";
 
-  const payload = {
+  const params = new URLSearchParams({
     name: document.getElementById("name").value,
     grade: document.getElementById("grade").value,
-    class: document.getElementById("class").value,
+    className: document.getElementById("class").value,
     number: document.getElementById("number").value,
+    score: correct,
     answers: shuffled.map((q, i) => `Q${i + 1}: ${q.userAnswer}`).join(", "),
-    correct
-  };
-
-  fetch("https://script.google.com/macros/s/AKfycbzaEbohb33NPS8iYg8YmCB46xcd99OwvjuV28EUXt9elnQ7DTzaFJkcmF8r0ez_BIXEZQ/exec", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  }).catch(err => {
-    console.error("送信エラー:", err);
+    reason: wrongList.replace(/<[^>]+>/g, ""), // HTML除去して送信
+    sheetName: "平方根 回答" // ここが保存先シート名
   });
+
+  fetch(`https://script.google.com/macros/s/AKfycbzaEbohb33NPS8iYg8YmCB46xcd99OwvjuV28EUXt9elnQ7DTzaFJkcmF8r0ez_BIXEZQ/exec?${params.toString()}`)
+    .catch(err => {
+      console.error("送信エラー:", err);
+    });
 }
+
 
 window.addEventListener("beforeunload", function (e) {
   e.preventDefault();
