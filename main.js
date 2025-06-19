@@ -1,162 +1,182 @@
+// === 設定 ===
 const quizData = Array.from({ length: 20 }, (_, i) => {
-  const num = i + 1;
-  return { question: `${num * num} の平方根`, answer: String(num), userAnswer: "" };
+  const root = i + 1;
+  return {
+    question: `√${root ** 2} = ?`,
+    answer: root.toString(),
+  };
 });
-let shuffled = quizData.sort(() => Math.random() - 0.5);
-let currentIndex = 0;
-let timer = 300;
-let timerInterval = null;
 
-const startScreen = document.getElementById("startScreen");
-const quizScreen = document.getElementById("quizScreen");
-const resultScreen = document.getElementById("resultScreen");
-const questionText = document.getElementById("questionText");
-const answerInput = document.getElementById("answerInput");
-const scoreText = document.getElementById("scoreText");
-const wrongAnswers = document.getElementById("wrongAnswers");
-const timerDisplay = document.getElementById("timer");
-const numberSelect = document.getElementById("number");
-const keypad = document.getElementById("keypad");
+let shuffled = [];
+let currentQuestion = 0;
+let userAnswers = Array(20).fill('');
+let timer;
+let timeRemaining = 300; // 5分 = 300秒
 
-function populateSelectOptions() {
+// === 初期化 ===
+window.onload = () => {
+  const numberSelect = document.getElementById("number");
   for (let i = 1; i <= 40; i++) {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = i;
-    numberSelect.appendChild(opt);
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = i;
+    numberSelect.appendChild(option);
   }
 
-  const keys = [...Array(9)].map((_, i) => i + 1).concat(0);
-  keys.forEach(n => {
-    const btn = document.createElement("button");
-    btn.textContent = n;
-    btn.onclick = () => inputDigit(n);
-    keypad.appendChild(btn);
-  });
+  // テスト画面・結果画面は非表示にしておく
+  document.getElementById("quizScreen").style.display = "none";
+  document.getElementById("resultScreen").style.display = "none";
 
-  const delBtn = document.createElement("button");
-  delBtn.textContent = "←";
-  delBtn.onclick = deleteDigit;
-  keypad.appendChild(delBtn);
+  // 仮想テンキー初期化
+  createKeypad();
+};
 
-  const clearBtn = document.createElement("button");
-  clearBtn.textContent = "クリア";
-  clearBtn.onclick = clearInput;
-  keypad.appendChild(clearBtn);
-}
-
-function updateTimer() {
-  let m = Math.floor(timer / 60);
-  let s = timer % 60;
-  timerDisplay.textContent = `残り: ${m}:${s.toString().padStart(2, '0')}`;
-  if (timer <= 0) {
-    clearInterval(timerInterval);
-    submitAnswers(true);
-  }
-  timer--;
-}
-
+// === テスト開始 ===
 function startQuiz() {
-  const name = document.getElementById("name").value.trim();
-  const grade = document.getElementById("grade").value.trim();
-  const classVal = document.getElementById("class").value;
+  const name = document.getElementById("name").value;
+  const grade = document.getElementById("grade").value;
+  const cls = document.getElementById("class").value;
   const number = document.getElementById("number").value;
 
-  if (!name || !grade || !classVal || !number) {
-    alert("すべての情報を入力してください。");
+  if (!name || !grade || !cls || !number) {
+    alert("すべての項目を入力してください");
     return;
   }
 
-  startScreen.classList.remove("active");
-  quizScreen.classList.add("active");
+  // シャッフル
+  shuffled = quizData.sort(() => Math.random() - 0.5);
 
+  // 画面切り替え
+  document.getElementById("startScreen").style.display = "none";
+  document.getElementById("quizScreen").style.display = "block";
+
+  // 初期表示
   showQuestion();
-  timerInterval = setInterval(updateTimer, 1000);
+
+  // タイマー開始
+  startTimer();
 }
 
+// === タイマー処理 ===
+function startTimer() {
+  updateTimerDisplay();
+  timer = setInterval(() => {
+    timeRemaining--;
+    updateTimerDisplay();
+    if (timeRemaining <= 0) {
+      clearInterval(timer);
+      alert("時間切れです。自動送信します。");
+      submitAnswers();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const minutes = Math.floor(timeRemaining / 60);
+  const seconds = timeRemaining % 60;
+  document.getElementById("timer").textContent = `残り: ${minutes}:${seconds
+    .toString()
+    .padStart(2, "0")}`;
+}
+
+// === 問題表示 ===
 function showQuestion() {
-  const q = shuffled[currentIndex];
-  questionText.textContent = `Q${currentIndex + 1}. ${q.question}`;
-  answerInput.textContent = q.userAnswer || "";
+  const q = shuffled[currentQuestion];
+  document.getElementById("questionText").textContent = `Q${currentQuestion + 1}. ${q.question}`;
+  document.getElementById("answerInput").textContent = userAnswers[currentQuestion] || '';
 }
 
-function inputDigit(digit) {
-  let val = answerInput.textContent;
-  if (val.length < 3) {
-    val += digit;
-    answerInput.textContent = val;
-    shuffled[currentIndex].userAnswer = val;
+// === 前・次の問題へ ===
+function prevQuestion() {
+  if (currentQuestion > 0) {
+    currentQuestion--;
+    showQuestion();
   }
-}
-
-function deleteDigit() {
-  let val = answerInput.textContent;
-  val = val.slice(0, -1);
-  answerInput.textContent = val;
-  shuffled[currentIndex].userAnswer = val;
-}
-
-function clearInput() {
-  answerInput.textContent = "";
-  shuffled[currentIndex].userAnswer = "";
 }
 
 function nextQuestion() {
-  if (currentIndex < shuffled.length - 1) {
-    currentIndex++;
+  if (currentQuestion < shuffled.length - 1) {
+    currentQuestion++;
     showQuestion();
   }
 }
 
-function prevQuestion() {
-  if (currentIndex > 0) {
-    currentIndex--;
-    showQuestion();
-  }
+// === 仮想テンキー作成 ===
+function createKeypad() {
+  const keys = ['1','2','3','4','5','6','7','8','9','0','←','クリア'];
+  const keypad = document.getElementById("keypad");
+  keys.forEach((key) => {
+    const btn = document.createElement("button");
+    btn.textContent = key;
+    btn.onclick = () => handleKeyPress(key);
+    keypad.appendChild(btn);
+  });
 }
 
-function submitAnswers(auto = false) {
-  if (!auto && !confirm("送信してもよろしいですか？")) return;
+// === 入力処理 ===
+function handleKeyPress(key) {
+  let current = userAnswers[currentQuestion] || '';
+  if (key === '←') {
+    current = current.slice(0, -1);
+  } else if (key === 'クリア') {
+    current = '';
+  } else {
+    current += key;
+  }
+  userAnswers[currentQuestion] = current;
+  document.getElementById("answerInput").textContent = current;
+}
 
-  clearInterval(timerInterval);
-  quizScreen.classList.remove("active");
-  resultScreen.classList.add("active");
+// === 送信処理 ===
+function submitAnswers() {
+  if (!confirm("送信しますか？")) return;
 
-  let correct = 0;
-  let wrongList = "";
-  shuffled.forEach((q, i) => {
-    if (q.userAnswer === q.answer) {
-      correct++;
+  clearInterval(timer);
+
+  const name = document.getElementById("name").value;
+  const grade = document.getElementById("grade").value;
+  const cls = document.getElementById("class").value;
+  const number = document.getElementById("number").value;
+
+  let correctCount = 0;
+  let wrongList = [];
+
+  shuffled.forEach((q, index) => {
+    const userAns = userAnswers[index];
+    if (userAns === q.answer) {
+      correctCount++;
     } else {
-      wrongList += `<p>Q${i + 1}: ${q.question} → あなたの答え: ${q.userAnswer || "無回答"}（正解: ${q.answer}）</p>`;
+      wrongList.push(`Q${index + 1}: ${q.question} → あなたの答え: ${userAns || '(空欄)'}`);
     }
   });
 
-  scoreText.textContent = `正解数: ${correct} / ${shuffled.length}`;
-  wrongAnswers.innerHTML = wrongList || "<p>全問正解です！</p>";
+  // 結果表示
+  document.getElementById("quizScreen").style.display = "none";
+  document.getElementById("resultScreen").style.display = "block";
+  document.getElementById("scoreText").textContent = `正解数: ${correctCount} / 20`;
+  document.getElementById("wrongAnswers").innerHTML =
+    wrongList.length > 0
+      ? `<ul>${wrongList.map(w => `<li>${w}</li>`).join('')}</ul>`
+      : "<p>全問正解！おめでとう！</p>";
 
-  const params = new URLSearchParams({
-    name: document.getElementById("name").value,
-    grade: document.getElementById("grade").value,
-    className: document.getElementById("class").value,
-    number: document.getElementById("number").value,
-    score: correct,
-    answers: shuffled.map((q, i) => `Q${i + 1}: ${q.userAnswer}`).join(", "),
-    reason: wrongList.replace(/<[^>]+>/g, ""), // HTML除去して送信
-    sheetName: "平方根 回答" // ここが保存先シート名
-  });
+  // Google Apps Script に送信
+  const data = {
+    name,
+    grade,
+    class: cls,
+    number,
+    answers: userAnswers,
+    correct: correctCount,
+  };
 
-  fetch(`https://script.google.com/macros/s/AKfycbzaEbohb33NPS8iYg8YmCB46xcd99OwvjuV28EUXt9elnQ7DTzaFJkcmF8r0ez_BIXEZQ/exec?${params.toString()}`)
-    .catch(err => {
-      console.error("送信エラー:", err);
-    });
+  fetch("https://script.google.com/macros/s/AKfycbzaEbohb33NPS8iYg8YmCB46xcd99OwvjuV28EUXt9elnQ7DTzaFJkcmF8r0ez_BIXEZQ/exec", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }).catch(err => console.error("送信エラー", err));
 }
 
-
-window.addEventListener("beforeunload", function (e) {
-  e.preventDefault();
-  e.returnValue = '';
-});
-
-window.onload = populateSelectOptions;
+// === グローバルに公開 ===
 window.startQuiz = startQuiz;
+window.prevQuestion = prevQuestion;
+window.nextQuestion = nextQuestion;
+window.submitAnswers = submitAnswers;
