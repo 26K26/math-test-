@@ -23,9 +23,8 @@ window.onload = () => {
     numberSelect.appendChild(option);
   }
 
-  // テスト画面・結果画面は非表示にしておく
-  document.getElementById("quizScreen").style.display = "none";
-  document.getElementById("resultScreen").style.display = "none";
+  // 最初の画面だけ表示
+  document.getElementById("startScreen").classList.add("active");
 
   // 仮想テンキー初期化
   createKeypad();
@@ -43,12 +42,12 @@ function startQuiz() {
     return;
   }
 
-  // シャッフル
-  shuffled = quizData.sort(() => Math.random() - 0.5);
+  // 問題シャッフル（元配列を変更しない）
+  shuffled = [...quizData].sort(() => Math.random() - 0.5);
 
-  // 画面切り替え
-  document.getElementById("startScreen").style.display = "none";
-  document.getElementById("quizScreen").style.display = "block";
+  // 表示切り替え
+  document.getElementById("startScreen").classList.remove("active");
+  document.getElementById("quizScreen").classList.add("active");
 
   // 初期表示
   showQuestion();
@@ -74,16 +73,18 @@ function startTimer() {
 function updateTimerDisplay() {
   const minutes = Math.floor(timeRemaining / 60);
   const seconds = timeRemaining % 60;
-  document.getElementById("timer").textContent = `残り: ${minutes}:${seconds
-    .toString()
-    .padStart(2, "0")}`;
+  document.getElementById("timer").textContent =
+    `残り: ${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 // === 問題表示 ===
 function showQuestion() {
   const q = shuffled[currentQuestion];
-  document.getElementById("questionText").textContent = `Q${currentQuestion + 1}. ${q.question}`;
-  document.getElementById("answerInput").textContent = userAnswers[currentQuestion] || '';
+  if (!q) return; // エラー対策
+  document.getElementById("questionText").textContent =
+    `Q${currentQuestion + 1}. ${q.question}`;
+  document.getElementById("answerInput").textContent =
+    userAnswers[currentQuestion] || '';
 }
 
 // === 前・次の問題へ ===
@@ -150,10 +151,13 @@ function submitAnswers() {
     }
   });
 
+  // 表示切り替え
+  document.getElementById("quizScreen").classList.remove("active");
+  document.getElementById("resultScreen").classList.add("active");
+
   // 結果表示
-  document.getElementById("quizScreen").style.display = "none";
-  document.getElementById("resultScreen").style.display = "block";
-  document.getElementById("scoreText").textContent = `正解数: ${correctCount} / 20`;
+  document.getElementById("scoreText").textContent =
+    `正解数: ${correctCount} / 20`;
   document.getElementById("wrongAnswers").innerHTML =
     wrongList.length > 0
       ? `<ul>${wrongList.map(w => `<li>${w}</li>`).join('')}</ul>`
